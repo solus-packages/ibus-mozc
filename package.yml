@@ -1,0 +1,35 @@
+name       : ibus-mozc
+version    : 2.23.2815
+release    : 1
+source     :
+    - git|https://github.com/google/mozc : afb03ddfe72dde4cf2409863a3bfea160f7a66d8
+license    : BSD-3-Clause
+component  : desktop.core
+summary    : Mozc engine for IBus.
+description: |
+    Japanese Input Method Editor for IBus.
+builddeps  :
+    - pkgconfig(Qt5Gui)
+    - pkgconfig(gtk+-2.0)
+    - pkgconfig(ibus-1.0)
+setup      : |
+    %patch -p1 < $pkgfiles/mozc.patch
+build      : |
+    cd src
+    GYP_DEFINES="ibus_mozc_path=/usr/lib64/ibus-mozc/ibus-engine-mozc server_dir=/usr/lib64/mozc" \
+        python build_mozc.py gyp
+    python build_mozc.py build -c Release unix/ibus/ibus.gyp:ibus_mozc server/server.gyp:mozc_server \
+        gui/gui.gyp:mozc_tool renderer/renderer.gyp:mozc_renderer
+install    : |
+    pushd src/out_linux/Release
+    install -Dm00755 ibus_mozc $installdir/usr/lib/ibus-mozc/ibus-engine-mozc
+    for bin in mozc_renderer mozc_server mozc_tool; do
+        install -Dm00755 $bin $installdir/usr/lib/mozc/$bin
+    done
+    install -Dm00644 gen/unix/ibus/mozc.xml $installdir/usr/share/ibus/component/mozc.xml
+    popd
+    pushd src/data/images/unix
+    mv ime_product_icon_opensource-32.png product_icon.png
+    for icon in *.png; do
+        install -Dm00644 $icon $installdir/usr/share/ibus-mozc/${icon#ui-}
+    done
